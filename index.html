@@ -3,35 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>اسعار العاب ستيم بالعراقي</title>
+<title>اسعار ستيم بالدينار العراقي</title>
 <style>
-body{font-family:system-ui;background:#0e141b;color:#fff;padding:20px;text-align:center}
-input{width:90%;padding:12px;border-radius:10px;border:none;margin:10px 0}
-.card{background:#1b2838;padding:15px;border-radius:12px;margin:10px 0;text-align:right}
-.price{color:#66c0f4;font-weight:bold}
+body{background:#0f141f;color:white;font-family:Arial;text-align:center;padding:20px}
+h1{margin-bottom:20px}
+input{width:90%;max-width:400px;padding:15px;border-radius:12px;border:none;font-size:18px;text-align:center}
+.card{background:#1b2838;margin:12px auto;padding:15px;border-radius:12px;max-width:500px;text-align:right}
+.price{color:#66c0f4;font-size:18px;font-weight:bold}
+.old{color:#888;text-decoration:line-through;margin-left:10px}
+.discount{background:#4c6b22;color:#beee11;padding:3px 8px;border-radius:5px;font-weight:bold}
+.iqd{color:#ffcc00;font-size:16px;margin-top:5px}
 </style>
 </head>
 <body>
-<h2>🎮 اسعار ستيم بالدينار العراقي</h2>
-<input id="q" placeholder="اكتب اسم اللعبة مثلا Elden Ring">
-<div id="res">اكتب اسم لعبة فوك ويطلع سعرها</div>
+<h1>🎮 اسعار ستيم بالدينار العراقي</h1>
+<input id="search" placeholder="ابحث مثلا RUST" value="RUST">
+<div id="results">جاري التحميل...</div>
+
 <script>
-const rate = 1320; // سعر الصرف دولار للدينار
-document.getElementById('q').addEventListener('input', async (e)=>{
- let v=e.target.value; if(v.length<2)return;
- let r=await fetch(`https://www.cheapshark.com/api/1.0/games?title=${v}&exact=0`);
- let j=await r.json();
- let h='';
- for(let g of j.slice(0,10)){
-   let d=await fetch(`https://www.cheapshark.com/api/1.0/games?id=${g.gameID}`);
-   let info=await d.json();
-   let cheapest=info.deals?info.deals[0]:null;
-   let priceUSD=cheapest?cheapest.price: '0';
-   let priceIQD=(priceUSD*rate).toLocaleString();
-   h+=`<div class=card><b>${info.info.title}</b><br><span class=price>$${priceUSD} = ${priceIQD} دينار عراقي</span></div>`;
- }
- document.getElementById('res').innerHTML=h||'ماكو نتائج';
-});
+const RATE = 1500; 
+const RUST_APPID = 252490;
+
+async function getRustLive(){
+  const resDiv = document.getElementById('results');
+  try{
+    let url = `https://store.steampowered.com/api/appdetails?appids=${RUST_APPID}&cc=us&filters=price_overview`;
+    let proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    let r = await fetch(proxy);
+    let j = await r.json();
+    let data = JSON.parse(j.contents);
+    let info = data[RUST_APPID].data.price_overview;
+    
+    let final = info.final / 100;
+    let initial = info.initial / 100;
+    let discount = info.discount_percent;
+    
+    let finalIQD = Math.round(final * RATE).toLocaleString('en-US');
+    let initialIQD = Math.round(initial * RATE).toLocaleString('en-US');
+
+    resDiv.innerHTML = `
+      <div class="card">
+        <h2 style="margin:0">Rust - رست</h2>
+        <div style="margin:10px 0">
+          ${discount>0 ? `<span class="discount">-${discount}%</span> <span class="old">$${initial}</span>` : ''}
+          <span class="price">$${final}</span>
+        </div>
+        <div class="iqd">
+          ${discount>0 ? `<span style="text-decoration:line-through;color:#888">${initialIQD} دينار</span> → ` : ''}
+          <b>${finalIQD} دينار عراقي</b>
+        </div>
+        <div style="font-size:13px;color:#8f98a0;margin-top:8px">السعر مباشر من ستيم - ${discount>0 ? 'عليه تخفيض حاليا!' : 'بدون تخفيض'}</div>
+      </div>
+    `;
+  }catch(e){
+    resDiv.innerHTML = "خطأ بجلب السعر، حدث الصفحة";
+  }
+}
+getRustLive();
 </script>
 </body>
 </html>
