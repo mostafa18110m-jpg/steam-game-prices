@@ -5,35 +5,48 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>اسعار ستيم بالدينار العراقي</title>
 <style>
-body{background:#0f141f;color:white;font-family:Arial;text-align:center;padding:20px}
-h1{margin-bottom:20px}
-input{width:90%;max-width:400px;padding:15px;border-radius:12px;border:none;font-size:18px;text-align:center}
-.card{background:#1b2838;margin:12px auto;padding:15px;border-radius:12px;max-width:500px;text-align:right}
-.price{color:#66c0f4;font-size:18px;font-weight:bold}
-.old{color:#888;text-decoration:line-through;margin-left:10px}
-.discount{background:#4c6b22;color:#beee11;padding:3px 8px;border-radius:5px;font-weight:bold}
-.iqd{color:#ffcc00;font-size:16px;margin-top:5px}
+body{background:#0f141f;color:white;font-family:Arial, sans-serif;text-align:center;padding:20px}
+h1{margin-bottom:20px; font-size: 24px;}
+input{width:90%;max-width:400px;padding:15px;border-radius:12px;border:none;font-size:18px;text-align:center;background: #1b2838;color: white;outline: none;box-shadow: 0 4px 15px rgba(0,0,0,0.2);}
+.card{background:#1b2838;margin:20px auto;padding:20px;border-radius:12px;max-width:500px;text-align:right;box-shadow: 0 4px 20px rgba(0,0,0,0.3);}
+.price{color:#66c0f4;font-size:22px;font-weight:bold;margin-right: 5px;}
+.old{color:#888;text-decoration:line-through;margin-left:10px;font-size: 16px;}
+.discount{background:#4c6b22;color:#beee11;padding:3px 8px;border-radius:5px;font-weight:bold;font-size: 14px;}
+.iqd{color:#ffcc00;font-size:18px;margin-top:10px;border-top: 1px solid #2a3f5a;padding-top: 10px;}
+.error{color: #ff4a4a; margin-top: 20px;}
 </style>
 </head>
 <body>
+
 <h1>🎮 اسعار ستيم بالدينار العراقي</h1>
-<input id="search" placeholder="ابحث مثلا RUST" value="RUST">
+<input id="search" placeholder="أدخل AppID اللعبة (مثلاً لـ Rust: 252490)" value="252490">
 <div id="results">جاري التحميل...</div>
 
 <script>
-const RATE = 1500; 
-const RUST_APPID = 252490;
+const RATE = 1500; // سعر الصرف الحالي
 
-async function getRustLive(){
+async function getSteamPrice(appId) {
   const resDiv = document.getElementById('results');
-  try{
-    let url = `https://store.steampowered.com/api/appdetails?appids=${RUST_APPID}&cc=us&filters=price_overview`;
+  resDiv.innerHTML = "جاري جلب السعر الحالي...";
+  
+  try {
+    // استخدام بروكسي cors-anywhere أو allorigins
+    let url = `https://store.steampowered.com/api/appdetails?appids=${appId}&cc=us&filters=price_overview`;
     let proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-    let r = await fetch(proxy);
-    let j = await r.json();
-    let data = JSON.parse(j.contents);
-    let info = data[RUST_APPID].data.price_overview;
     
+    let response = await fetch(proxy);
+    if (!response.ok) throw new Error('مشكلة في الاتصال بالخادم');
+    
+    let jsonResult = await response.json();
+    let data = JSON.parse(jsonResult.contents);
+    
+    // التحقق من وجود بيانات للعبة
+    if (!data || !data[appId] || !data[appId].success || !data[appId].data.price_overview) {
+      resDiv.innerHTML = "<div class='error'>لم يتم العثور على بيانات سعر هذه اللعبة (قد تكون مجانية أو غير متوفرة).</div>";
+      return;
+    }
+    
+    let info = data[appId].data.price_overview;
     let final = info.final / 100;
     let initial = info.initial / 100;
     let discount = info.discount_percent;
@@ -43,23 +56,36 @@ async function getRustLive(){
 
     resDiv.innerHTML = `
       <div class="card">
-        <h2 style="margin:0">Rust - رست</h2>
-        <div style="margin:10px 0">
-          ${discount>0 ? `<span class="discount">-${discount}%</span> <span class="old">$${initial}</span>` : ''}
+        <h2 style="margin:0; color:#ffffff;">معلومات السعر (AppID: ${appId})</h2>
+        <div style="margin:15px 0; display: flex; align-items: center;">
+          ${discount > 0 ? `<span class="discount">-${discount}%</span> <span class="old">$${initial}</span>` : ''}
           <span class="price">$${final}</span>
         </div>
         <div class="iqd">
-          ${discount>0 ? `<span style="text-decoration:line-through;color:#888">${initialIQD} دينار</span> → ` : ''}
-          <b>${finalIQD} دينار عراقي</b>
+          ${discount > 0 ? `<span style="text-decoration:line-through;color:#888; font-size:14px;">${initialIQD} دينار</span> ← ` : ''}
+          <span>السعر بالدينار:</span> <b>${finalIQD} د.ع</b>
         </div>
-        <div style="font-size:13px;color:#8f98a0;margin-top:8px">السعر مباشر من ستيم - ${discount>0 ? 'عليه تخفيض حاليا!' : 'بدون تخفيض'}</div>
+        <div style="font-size:13px;color:#8f98a0;margin-top:12px;background:#101822;padding:8px;border-radius:6px;">
+          📌 سعر مباشر من ستيم - ${discount > 0 ? '🔥 عليها تخفيض حالياً!' : 'بدون تخفيض'}
+        </div>
       </div>
     `;
-  }catch(e){
-    resDiv.innerHTML = "خطأ بجلب السعر، حدث الصفحة";
+  } catch (e) {
+    console.error(e);
+    resDiv.innerHTML = "<div class='error'>❌ خطأ في جلب السعر. البروكسي مستهلك حالياً، يرجى إعادة المحاولة بعد ثوانٍ أو تحديث الصفحة.</div>";
   }
 }
-getRustLive();
+
+// تشغيل تلقائي عند فتح الصفحة لجلب Rust
+getSteamPrice(252490);
+
+// تفعيل حقل البحث عند الضغط على زر Enter
+document.getElementById('search').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        let id = this.value.trim();
+        if(id) getSteamPrice(id);
+    }
+});
 </script>
 </body>
 </html>
