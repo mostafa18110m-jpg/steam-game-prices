@@ -1,91 +1,283 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>اسعار ستيم بالدينار العراقي</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Steam IQ | أسعار ألعاب ستيم</title>
 <style>
-body{background:#0f141f;color:white;font-family:Arial, sans-serif;text-align:center;padding:20px}
-h1{margin-bottom:20px; font-size: 24px;}
-input{width:90%;max-width:400px;padding:15px;border-radius:12px;border:none;font-size:18px;text-align:center;background: #1b2838;color: white;outline: none;box-shadow: 0 4px 15px rgba(0,0,0,0.2);}
-.card{background:#1b2838;margin:20px auto;padding:20px;border-radius:12px;max-width:500px;text-align:right;box-shadow: 0 4px 20px rgba(0,0,0,0.3);}
-.price{color:#66c0f4;font-size:22px;font-weight:bold;margin-right: 5px;}
-.old{color:#888;text-decoration:line-through;margin-left:10px;font-size: 16px;}
-.discount{background:#4c6b22;color:#beee11;padding:3px 8px;border-radius:5px;font-weight:bold;font-size: 14px;}
-.iqd{color:#ffcc00;font-size:18px;margin-top:10px;border-top: 1px solid #2a3f5a;padding-top: 10px;}
-.error{color: #ff4a4a; margin-top: 20px;}
+*{box-sizing:border-box}
+body{margin:0;background:#101820;color:#fff;font-family:Tahoma,Arial}
+header{background:#171d25;padding:18px 7%;border-bottom:1px solid #30465b}
+.logo{font-size:25px;font-weight:bold;color:#fff}
+.logo span{color:#66c0f4}
+main{max-width:1200px;margin:auto;padding:25px 18px}
+.hero{padding:45px 30px;border-radius:12px;background:linear-gradient(90deg,#101820eF,#102a3e99),url('https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/library_hero.jpg') center/cover}
+h1{font-size:36px}
+.hero p{color:#c7d5e0;line-height:1.8}
+.search{display:flex;max-width:600px;gap:8px}
+input{flex:1;min-width:0;padding:14px;border:1px solid #45617a;border-radius:7px;background:#0e1925;color:white}
+button{padding:12px 20px;border:0;border-radius:7px;background:#1a9fff;color:white;font-weight:bold;cursor:pointer}
+.section{margin-top:35px}
+.section h2{border-right:4px solid #1a9fff;padding-right:12px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}
+.card{background:#1b2838;border:1px solid #30465b;border-radius:9px;overflow:hidden;cursor:pointer}
+.card:hover{border-color:#66c0f4;transform:translateY(-3px)}
+.card img{width:100%;aspect-ratio:460/215;object-fit:cover}
+.info{padding:12px}
+.name{font-weight:bold;min-height:35px}
+.discount{background:#a4d007;color:#17200a;padding:5px 8px;font-weight:bold}
+.old{color:#8999a8;text-decoration:line-through;font-size:12px}
+.price{color:#d7f58c;font-size:17px;font-weight:bold}
+.iqd{color:#66c0f4;margin-top:9px}
+.foot{margin-top:10px;padding-top:8px;border-top:1px solid #30465b;font-size:12px;color:#9aa8b7}
+a{color:#66c0f4;text-decoration:none}
+.status{padding:20px;background:#1b2838;border-radius:8px;text-align:center;grid-column:1/-1}
+.detail{background:#1b2838;padding:18px;margin-top:20px;border-radius:9px}
+.detail img{max-width:300px;width:100%}
+.note{color:#9aa8b7;font-size:12px;line-height:1.8;margin-top:25px}
+@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}h1{font-size:27px}}
+@media(max-width:400px){.grid{gap:8px}.info{padding:8px}.name{font-size:12px}}
 </style>
 </head>
 <body>
+<header><div class="logo">STEAM <span>IQ</span></div></header>
+<main>
+<section class="hero">
+<h1>اكتشف ألعاب Steam بأفضل الأسعار 🎮</h1>
+<p>تابع التخفيضات والأسعار الحقيقية وحوّلها إلى الدينار العراقي.</p>
+<form class="search" id="searchForm">
+<input id="query" placeholder="ابحث باسم اللعبة أو AppID">
+<button>بحث</button>
+</form>
+</section>
 
-<h1>🎮 اسعار ستيم بالدينار العراقي</h1>
-<input id="search" placeholder="أدخل AppID اللعبة (مثلاً لـ Rust: 252490)" value="252490">
-<div id="results">جاري التحميل...</div>
+<section class="section">
+<h2>🔥 أشهر الألعاب المخفّضة حالياً</h2>
+<div class="grid" id="deals">
+<div class="status">جاري تحميل عروض Steam...</div>
+</div>
+</section>
+
+<section class="section" id="searchSection" hidden>
+<h2>نتائج البحث</h2>
+<div class="grid" id="results"></div>
+<div id="detail"></div>
+</section>
+
+<p class="note">
+الأسعار والخصومات مأخوذة من بيانات متجر Steam للسوق الأمريكي بالدولار.
+تحويل الدينار العراقي تقريبي ويتغير حسب سعر الصرف.
+</p>
+</main>
 
 <script>
-const RATE = 1500; // سعر الصرف الحالي
+let exchangeRate=1500;
 
-async function getSteamPrice(appId) {
-  const resDiv = document.getElementById('results');
-  resDiv.innerHTML = "جاري جلب السعر الحالي...";
-  
-  try {
-    // استخدام بروكسي cors-anywhere أو allorigins
-    let url = `https://store.steampowered.com/api/appdetails?appids=${appId}&cc=us&filters=price_overview`;
-    let proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-    
-    let response = await fetch(proxy);
-    if (!response.ok) throw new Error('مشكلة في الاتصال بالخادم');
-    
-    let jsonResult = await response.json();
-    let data = JSON.parse(jsonResult.contents);
-    
-    // التحقق من وجود بيانات للعبة
-    if (!data || !data[appId] || !data[appId].success || !data[appId].data.price_overview) {
-      resDiv.innerHTML = "<div class='error'>لم يتم العثور على بيانات سعر هذه اللعبة (قد تكون مجانية أو غير متوفرة).</div>";
-      return;
-    }
-    
-    let info = data[appId].data.price_overview;
-    let final = info.final / 100;
-    let initial = info.initial / 100;
-    let discount = info.discount_percent;
-    
-    let finalIQD = Math.round(final * RATE).toLocaleString('en-US');
-    let initialIQD = Math.round(initial * RATE).toLocaleString('en-US');
+const $=id=>document.getElementById(id);
 
-    resDiv.innerHTML = `
-      <div class="card">
-        <h2 style="margin:0; color:#ffffff;">معلومات السعر (AppID: ${appId})</h2>
-        <div style="margin:15px 0; display: flex; align-items: center;">
-          ${discount > 0 ? `<span class="discount">-${discount}%</span> <span class="old">$${initial}</span>` : ''}
-          <span class="price">$${final}</span>
-        </div>
-        <div class="iqd">
-          ${discount > 0 ? `<span style="text-decoration:line-through;color:#888; font-size:14px;">${initialIQD} دينار</span> ← ` : ''}
-          <span>السعر بالدينار:</span> <b>${finalIQD} د.ع</b>
-        </div>
-        <div style="font-size:13px;color:#8f98a0;margin-top:12px;background:#101822;padding:8px;border-radius:6px;">
-          📌 سعر مباشر من ستيم - ${discount > 0 ? '🔥 عليها تخفيض حالياً!' : 'بدون تخفيض'}
-        </div>
-      </div>
-    `;
-  } catch (e) {
-    console.error(e);
-    resDiv.innerHTML = "<div class='error'>❌ خطأ في جلب السعر. البروكسي مستهلك حالياً، يرجى إعادة المحاولة بعد ثوانٍ أو تحديث الصفحة.</div>";
-  }
+function usd(cents){
+ return cents==null?"مجاني":
+ new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(cents/100);
 }
 
-// تشغيل تلقائي عند فتح الصفحة لجلب Rust
-getSteamPrice(252490);
+function iqd(cents){
+ return cents==null?"مجاني":
+ Math.round(cents/100*exchangeRate).toLocaleString("en-US")+" د.ع";
+}
 
-// تفعيل حقل البحث عند الضغط على زر Enter
-document.getElementById('search').addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') {
-        let id = this.value.trim();
-        if(id) getSteamPrice(id);
-    }
+function escapeHTML(value){
+ return String(value??"").replace(/[&<>"']/g,c=>({
+ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[c]));
+}
+
+async function request(url){
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),10000);
+ try{
+  const response=await fetch(url,{signal:controller.signal});
+  if(!response.ok)throw Error("HTTP "+response.status);
+  return await response.json();
+ }finally{
+  clearTimeout(timer);
+ }
+}
+
+async function steamRequest(url){
+ const methods=[
+  ()=>request(url),
+  ()=>request("https://api.allorigins.win/raw?url="+encodeURIComponent(url)),
+  async()=>{
+   const data=await request("https://api.allorigins.win/get?url="+encodeURIComponent(url));
+   return JSON.parse(data.contents);
+  },
+  ()=>request("https://corsproxy.io/?url="+encodeURIComponent(url))
+ ];
+
+ let error;
+ for(const method of methods){
+  try{return await method()}
+  catch(e){error=e}
+ }
+ throw error;
+}
+
+async function loadExchange(){
+ try{
+  const data=await request("https://open.er-api.com/v6/latest/USD");
+  if(data.result==="success" && data.rates.IQD>500){
+   exchangeRate=data.rates.IQD;
+  }
+ }catch(e){}
+}
+
+function makeCard(game){
+ const id=game.id||game.appid;
+ const discount=Number(game.discount_percent||0);
+ const final=game.final_price??null;
+ const initial=game.original_price??final;
+
+ return `
+ <article class="card" data-id="${escapeHTML(id)}">
+ <img loading="lazy" src="${escapeHTML(game.header_image||game.large_capsule_image||"")}" alt="${escapeHTML(game.name)}">
+ <div class="info">
+ <div class="name">${escapeHTML(game.name)}</div>
+ ${discount?`<span class="discount">-${discount}%</span>`:""}
+ ${discount?`<div class="old">${usd(initial)}</div>`:""}
+ <div class="price">${usd(final)}</div>
+ <div class="iqd">${iqd(final)}</div>
+ <div class="foot">
+ <a href="https://store.steampowered.com/app/${id}/" target="_blank" rel="noopener">صفحة اللعبة في Steam ↗</a>
+ </div>
+ </div>
+ </article>`;
+}
+
+function activateCards(container){
+ container.querySelectorAll(".card").forEach(card=>{
+  card.addEventListener("click",()=>showDetails(card.dataset.id));
+ });
+}
+
+async function loadDeals(){
+ const grid=$("deals");
+ grid.innerHTML='<div class="status">جاري جلب التخفيضات من Steam...</div>';
+
+ try{
+  const data=await steamRequest(
+   "https://store.steampowered.com/api/featuredcategories/?cc=us&l=english"
+  );
+
+  const games=[
+   ...(data.specials?.items||[]),
+   ...(data.top_sellers?.items||[])
+  ].filter(g=>g.id && Number(g.discount_percent)>0);
+
+  const unique=[...new Map(games.map(g=>[g.id,g])).values()]
+   .sort((a,b)=>b.discount_percent-a.discount_percent)
+   .slice(0,16);
+
+  if(!unique.length)throw Error("لا توجد عروض متاحة حالياً");
+
+  grid.innerHTML=unique.map(makeCard).join("");
+  activateCards(grid);
+
+ }catch(error){
+  grid.innerHTML='<div class="status">تعذر تحميل العروض حالياً. حاول التحديث لاحقاً.</div>';
+ }
+}
+
+async function getGame(id){
+ const data=await steamRequest(
+  "https://store.steampowered.com/api/appdetails?appids="+
+  encodeURIComponent(id)+"&cc=us&l=english"
+ );
+
+ if(!data[id]?.success)throw Error("اللعبة غير موجودة");
+ return data[id].data;
+}
+
+async function searchGame(term){
+ $("searchSection").hidden=false;
+ $("results").innerHTML='<div class="status">جاري البحث...</div>';
+ $("detail").innerHTML="";
+
+ try{
+  let games=[];
+
+  if(/^\d+$/.test(term)){
+   const game=await getGame(term);
+   games=[{id:term,name:game.name,header_image:game.header_image,
+    price_overview:game.price_overview}];
+  }else{
+   const data=await steamRequest(
+    "https://store.steampowered.com/api/storesearch/?term="+
+    encodeURIComponent(term)+"&cc=us&l=english"
+   );
+
+   if(!data.items?.length)throw Error("لم يتم العثور على اللعبة");
+
+   games=await Promise.all(data.items.slice(0,8).map(async item=>{
+    try{
+     const game=await getGame(item.id);
+     return {...item,...game,id:item.id};
+    }catch(e){return item}
+   }));
+  }
+
+  $("results").innerHTML=games.map(game=>{
+   const p=game.price_overview||{};
+   return makeCard({
+    id:game.id,name:game.name,header_image:game.header_image,
+    final_price:p.final??null,
+    original_price:p.initial??null,
+    discount_percent:p.discount_percent??0
+   });
+  }).join("");
+
+  activateCards($("results"));
+
+ }catch(error){
+  $("results").innerHTML=
+   '<div class="status">'+escapeHTML(error.message)+'</div>';
+ }
+}
+
+async function showDetails(id){
+ const box=$("detail");
+ box.innerHTML="جاري تحميل تفاصيل اللعبة...";
+
+ try{
+  const game=await getGame(id);
+  const p=game.price_overview;
+
+  box.innerHTML=`
+  <img src="${escapeHTML(game.header_image)}" alt="${escapeHTML(game.name)}">
+  <h2>${escapeHTML(game.name)}</h2>
+  ${p?`
+   ${p.discount_percent?`<span class="discount">-${p.discount_percent}%</span>`:""}
+   ${p.discount_percent?`<div class="old">${escapeHTML(p.initial_formatted)}</div>`:""}
+   <div class="price">${escapeHTML(p.final_formatted)}</div>
+   <div class="iqd">${iqd(p.final)}</div>
+  `:"السعر غير متاح لهذا السوق"}
+  <p><a target="_blank" rel="noopener" href="https://store.steampowered.com/app/${id}/">شراء اللعبة من Steam ↗</a></p>
+  `;
+ }catch(e){
+  box.textContent="تعذر تحميل تفاصيل اللعبة.";
+ }
+}
+
+$("searchForm").addEventListener("submit",event=>{
+ event.preventDefault();
+ const term=$("query").value.trim();
+ if(term)searchGame(term);
 });
+
+(async()=>{
+ await loadExchange();
+ await loadDeals();
+})();
 </script>
 </body>
 </html>
