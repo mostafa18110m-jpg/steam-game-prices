@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>اسعار العاب ستيم بالعراقي</title>
+<style>
+body{font-family:system-ui;background:#0e141b;color:#fff;padding:20px;text-align:center}
+input{width:90%;padding:12px;border-radius:10px;border:none;margin:10px 0}
+.card{background:#1b2838;padding:15px;border-radius:12px;margin:10px 0;text-align:right}
+.price{color:#66c0f4;font-weight:bold}
+</style>
+</head>
+<body>
+<h2>🎮 اسعار ستيم بالدينار العراقي</h2>
+<input id="q" placeholder="اكتب اسم اللعبة مثلا Elden Ring">
+<div id="res">اكتب اسم لعبة فوك ويطلع سعرها</div>
+<script>
+const rate = 1320; // سعر الصرف دولار للدينار
+document.getElementById('q').addEventListener('input', async (e)=>{
+ let v=e.target.value; if(v.length<2)return;
+ let r=await fetch(`https://www.cheapshark.com/api/1.0/games?title=${v}&exact=0`);
+ let j=await r.json();
+ let h='';
+ for(let g of j.slice(0,10)){
+   let d=await fetch(`https://www.cheapshark.com/api/1.0/games?id=${g.gameID}`);
+   let info=await d.json();
+   let cheapest=info.deals?info.deals[0]:null;
+   let priceUSD=cheapest?cheapest.price: '0';
+   let priceIQD=(priceUSD*rate).toLocaleString();
+   h+=`<div class=card><b>${info.info.title}</b><br><span class=price>$${priceUSD} = ${priceIQD} دينار عراقي</span></div>`;
+ }
+ document.getElementById('res').innerHTML=h||'ماكو نتائج';
+});
+</script>
+</body>
+</html>
